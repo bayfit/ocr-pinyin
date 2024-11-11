@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Tiếng Trung sang Pinyin</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+    <style>
+        /* Đặt giao diện cơ bản cho di động */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f5;
+            color: #333;
+            height: 100vh;
+            text-align: center;
+        }
+
+        h2 {
+            color: #4A90E2;
+        }
+
+        /* Video xem trước từ camera */
+        #camera {
+            width: 100%;
+            max-width: 360px;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        /* Nút chụp ảnh */
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #4A90E2;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            outline: none;
+        }
+
+        button:hover {
+            background-color: #357ABD;
+        }
+
+        /* Kết quả OCR */
+        #results {
+            width: 100%;
+            max-width: 360px;
+            text-align: left;
+            background-color: #fff;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #results h3 {
+            margin-top: 0;
+        }
+
+        #results div {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h2>OCR Tiếng Trung sang Pinyin</h2>
+
+    <!-- Phần xem camera -->
+    <video id="camera" autoplay playsinline></video>
+    <button onclick="captureAndProcessImage()">Quét & Chuyển đổi</button>
+
+    <!-- Hiển thị kết quả -->
+    <div id="results">
+        <h3>Ký tự tiếng Trung:</h3>
+        <div id="chineseText">Chưa có kết quả</div>
+        
+        <h3>Pinyin:</h3>
+        <div id="pinyinText">Chưa có kết quả</div>
+    </div>
+
+    <script>
+        // Mở camera
+        async function startCamera() {
+            const video = document.getElementById('camera');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = stream;
+            } catch (error) {
+                console.error("Lỗi khi mở camera:", error);
+            }
+        }
+
+        // Chụp ảnh từ video
+        function captureAndProcessImage() {
+            const video = document.getElementById('camera');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Nhận diện văn bản từ ảnh chụp
+            Tesseract.recognize(
+                canvas,
+                'chi_sim', // Mô hình OCR cho tiếng Trung
+                { logger: m => console.log(m) }
+            ).then(({ data: { text } }) => {
+                // Hiển thị kết quả OCR
+                document.getElementById('chineseText').innerText = text.trim();
+
+                // Chuyển đổi sang Pinyin
+                fetchPinyin(text.trim());
+            });
+        }
+
+        // Hàm gọi API để chuyển đổi ký tự tiếng Trung sang Pinyin
+        function fetchPinyin(chineseText) {
+            const url = `https://api.example.com/pinyin?text=${encodeURIComponent(chineseText)}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('pinyinText').innerText = data.pinyin || "Không có kết quả";
+                })
+                .catch(error => {
+                    console.error("Có lỗi khi chuyển đổi sang Pinyin:", error);
+                });
+        }
+
+        // Bắt đầu camera khi tải trang
+        window.onload = startCamera;
+    </script>
+</body>
+</html>
